@@ -1,10 +1,12 @@
 """CPU functionality."""
 
 import sys
+filename = sys.argv[1]
 
 PRN = 0b01000111  # Print numeric value stored in the given register.
 LDI = 0b10000010  # Set the value of a register to an integer.
 HLT = 0b00000001  # Halt the CPU (and exit the emulator).
+MUL = 0b10100010  # Multiply the values in two registers together and store the result in registerA.
 
 
 class CPU:
@@ -23,24 +25,37 @@ class CPU:
 
     def load(self):
         """Load a program into memory."""
+        self.address = 0
+        try:
+            with open(filename) as f:
+                for line in f:
+                    comment_split = line.split('#')
+                    n = comment_split[0].strip()
+                    if n == '':
+                        continue
 
-        address = 0
+                    val = int(n, 2)
+                    self.ram[self.address] = val
+                    self.address += 1
 
+        except FileNotFoundError:
+            print(f"{sys.argv[1]}: {filename} not found")
+            sys.exit()
         # For now, we've just hardcoded a program:
 
-        program = [
-            # From print8.ls8
-            0b10000010,  # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111,  # PRN R0
-            0b00000000,
-            0b00000001,  # HLT
-        ]
+        # program = [
+        #     # From print8.ls8
+        #     0b10000010,  # LDI R0,8
+        #     0b00000000,
+        #     0b00001000,
+        #     0b01000111,  # PRN R0
+        #     0b00000000,
+        #     0b00000001,  # HLT
+        # ]
 
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+        # for instruction in program:
+        #     self.ram[address] = instruction
+        #     address += 1
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -48,6 +63,8 @@ class CPU:
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         #  elif op == "SUB": etc
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -73,23 +90,32 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        self.run = True
-        while self.run:
+        running = True
+
+        while running:
             IR = self.ram_read(self.pc)  # `IR`: Instruction Register , contains a copy of the currently executing instruction
             op_a = self.ram_read(self.pc + 1)
             op_b = self.ram_read(self.pc + 2)
 
+            # HLT: Halt the CPU (and exit the emulator).
             if IR == HLT:
                 print("Exiting the program!")
-                self.run = False
+                running = False
 
+            # LDI: Set the value of a register to an integer.
             elif IR == LDI:
                 self.reg[op_a] = op_b
                 self.pc += 3
 
+            # PRN: Print numeric value stored in the given register.
             elif IR == PRN:
                 print("The answer is:", self.reg[op_a])
                 self.pc += 2
 
+            # MUL: Multiply the values in two registers together and store the result in registerA.
+            # expecting a number of 72
+            elif IR == MUL:
+                self.alu("MUL", op_a, op_b)
+                self.pc += 3
             else:
-                self.run = False
+                running = False
