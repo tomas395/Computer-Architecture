@@ -3,9 +3,9 @@
 """Main."""
 
 import sys
-from cpu import *
+from cpu import CPU
 
 cpu = CPU()
 
-cpu.load()
+cpu.load("/Users/TOrtiz/Documents/git/Computer-Architecture/ls8/examples/mult.ls8")
 cpu.run()
