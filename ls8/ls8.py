@@ -7,5 +7,5 @@ from cpu import CPU
 
 cpu = CPU()
 
-cpu.load("/Users/TOrtiz/Documents/git/Computer-Architecture/ls8/examples/mult.ls8")
+cpu.load("/Users/TOrtiz/Documents/git/Computer-Architecture/ls8/examples/stack.ls8")
 cpu.run()

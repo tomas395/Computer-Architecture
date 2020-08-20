@@ -2,13 +2,15 @@ import sys
 
 """CPU functionality."""
 
-PRN = 0b01000111  # Print numeric value stored in the given register.
-LDI = 0b10000010  # Set the value of a register to an integer.
+ADD = 0b10100000  # Add the values in two registers together and store the result in registerA.
+DIV = 0b10100011  # Divide the values in two registers together and store the result in registerA.
 HLT = 0b00000001  # Halt the CPU (and exit the emulator).
+LDI = 0b10000010  # Set the value of a register to an integer.
 MUL = 0b10100010  # Multiply the values in two registers together and store the result in registerA.
-ADD = 0b10100000
-SUB = 0b10100001
-DIV = 0b10100011
+POP = 0b01000110  # Pop the value at the top of the stack into the given register.
+PRN = 0b01000111  # Print numeric value stored in the given register.
+PUSH = 0b01000101  # Push the value in the given register on the stack.
+SUB = 0b10100001  # You guessed right
 
 
 class CPU:
@@ -17,6 +19,7 @@ class CPU:
     def __init__(self):
         """Construct a new CPU."""
         self.reg = [0] * 8
+        self.reg[7] = 0xF4
         self.ram = [0] * 256
         self.pc = 0
         self.halted = False
@@ -126,5 +129,23 @@ class CPU:
 
             elif IR == ADD:
                 self.alu("ADD", op_a, op_b)
+
+            # PUSH: Push the value in the given register on the stack.
+            elif IR == PUSH:
+                reg_index = self.ram[self.pc + 1]
+                val = self.reg[reg_index]
+                self.reg[7] -= 1
+                SP = self.reg[7]
+                self.ram[SP] = val
+                self.pc += 2
+
+            # POP: Pop the value at the top of the stack into the given register.
+            elif IR == POP:
+                reg_index = self.ram[self.pc + 1]
+                val = self.ram[SP]
+                self.reg[reg_index] = val
+                SP = self.reg[7]
+                self.reg[7] += 1
+                self.pc += 2
 
             self.pc += instruction_length
