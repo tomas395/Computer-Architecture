@@ -135,17 +135,14 @@ class CPU:
                 reg_index = self.ram[self.pc + 1]
                 val = self.reg[reg_index]
                 self.reg[7] -= 1
-                SP = self.reg[7]
-                self.ram[SP] = val
-                self.pc += 2
+                self.ram[self.reg[7]] = val
 
             # POP: Pop the value at the top of the stack into the given register.
             elif IR == POP:
                 reg_index = self.ram[self.pc + 1]
-                val = self.ram[SP]
-                self.reg[reg_index] = val
                 SP = self.reg[7]
+                val = self.ram[SP]
                 self.reg[7] += 1
-                self.pc += 2
+                self.reg[reg_index] = val
 
             self.pc += instruction_length
