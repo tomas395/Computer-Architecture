@@ -3,6 +3,7 @@ import sys
 """CPU functionality."""
 
 ADD = 0b10100000  # Add the values in two registers together and store the result in registerA.
+CALL = 0b01010000  # Calls a subroutine (function) at the address stored in the register.
 DIV = 0b10100011  # Divide the values in two registers together and store the result in registerA.
 HLT = 0b00000001  # Halt the CPU (and exit the emulator).
 LDI = 0b10000010  # Set the value of a register to an integer.
@@ -10,6 +11,7 @@ MUL = 0b10100010  # Multiply the values in two registers together and store the 
 POP = 0b01000110  # Pop the value at the top of the stack into the given register.
 PRN = 0b01000111  # Print numeric value stored in the given register.
 PUSH = 0b01000101  # Push the value in the given register on the stack.
+RET = 0b00010001  # Return from subroutine. Pop the value from the top of the stack and store it in the `PC`.
 SUB = 0b10100001  # You guessed right
 
 
@@ -25,9 +27,17 @@ class CPU:
         self.halted = False
 
     def ram_read(self, MAR):
+        '''
+        accept address to read
+        returns value stored
+        '''
         return self.ram[MAR]
 
-    def ram_write(self, MAR, MDR):
+    def ram_write(self, MDR, MAR):
+        '''
+        accepts value to write
+        and address to write it to
+        '''
         self.ram[MAR] = MDR
 
     def load(self, filename):
@@ -78,9 +88,6 @@ class CPU:
         elif op == "DIV":
             self.reg[reg_a] //= self.reg[reg_b]
 
-        else:
-            raise Exception("Unsupported ALU operation")
-
     def trace(self):
         """
         Handy function to print out the CPU state. You might want to call this
@@ -89,8 +96,8 @@ class CPU:
 
         print(f"TRACE: %02X | %02X %02X %02X |" % (
             self.pc,
-            # self.fl,
-            # self.ie,
+            #self.fl,
+            #self.ie,
             self.ram_read(self.pc),
             self.ram_read(self.pc + 1),
             self.ram_read(self.pc + 2)
@@ -104,45 +111,63 @@ class CPU:
     def run(self):
         """Run the CPU."""
         while not self.halted:
-            IR = self.ram[self.pc]  # `IR`: Instruction Register , contains a copy of the currently executing instruction
-            instruction_length = ((IR >> 6) & 0b11) + 1  # (bitshifted instruction)
+            IR = self.ram_read(self.pc)
+            # instruction_length = ((IR >> 6) & 0b11) + 1  # (bitshifted instruction)
             op_a = self.ram_read(self.pc + 1)
             op_b = self.ram_read(self.pc + 2)
 
             # HLT: Halt the CPU (and exit the emulator).
             if IR == HLT:
-                print("Exiting the program!")
                 self.halted = True
 
             # LDI: Set the value of a register to an integer.
             elif IR == LDI:
                 self.reg[op_a] = op_b
+                self.pc += 3
 
             # PRN: Print numeric value stored in the given register.
             elif IR == PRN:
                 print("The answer is:", self.reg[op_a])
+                self.pc += 2
 
             # MUL: Multiply the values in two registers together and store the result in registerA.
             # expecting a number of 72
             elif IR == MUL:
                 self.alu("MUL", op_a, op_b)
+                self.pc += 3
 
             elif IR == ADD:
                 self.alu("ADD", op_a, op_b)
+                self.pc += 3
 
             # PUSH: Push the value in the given register on the stack.
             elif IR == PUSH:
-                reg_index = self.ram[self.pc + 1]
-                val = self.reg[reg_index]
+                reg_idx = self.ram[self.pc + 1]
+                val = self.reg[reg_idx]
                 self.reg[7] -= 1
                 self.ram[self.reg[7]] = val
+                self.pc += 2
 
             # POP: Pop the value at the top of the stack into the given register.
             elif IR == POP:
-                reg_index = self.ram[self.pc + 1]
+                reg_idx = self.ram[self.pc + 1]
                 SP = self.reg[7]
                 val = self.ram[SP]
                 self.reg[7] += 1
-                self.reg[reg_index] = val
+                self.reg[reg_idx] = val
+                self.pc += 2
 
-            self.pc += instruction_length
+            # CALL: Calls a subroutine (function) at the address stored in the register.
+            elif IR == CALL:
+                reg_idx = self.pc + 2
+                self.reg[7] -= 1
+                self.ram[self.reg[7]] = reg_idx
+                self.pc = self.reg[op_a]
+
+            # RET: Returns from subroutine.
+            elif IR == RET:
+                SP = self.ram[self.reg[7]]
+                self.pc = SP
+                self.reg[7] += 1
+
+            # self.pc += instruction_length

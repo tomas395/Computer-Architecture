@@ -2,10 +2,10 @@
 
 """Main."""
 
-import sys
+# import sys
 from cpu import CPU
 
 cpu = CPU()
 
-cpu.load("/Users/TOrtiz/Documents/git/Computer-Architecture/ls8/examples/stack.ls8")
+cpu.load("/Users/TOrtiz/Documents/git/Computer-Architecture/ls8/examples/call.ls8")
 cpu.run()
